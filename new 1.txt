@@ -1,0 +1,35 @@
+import json
+import pymysql
+import os
+
+# Assuming environment variables are used to store these values
+RDS_HOST = os.environ['DB_HOST']
+DB_NAME = os.environ['DB_NAME']
+DB_USER = os.environ['DB_USER']
+DB_PASSWORD = os.environ['DB_PASSWORD']
+
+def lambda_handler(event, context):
+    email = event['email']
+    
+    # Simple validation
+    if not email or "@" not in email:
+        return {
+            'statusCode': 400,
+            'body': json.dumps('Invalid email address')
+        }
+
+    try:
+        conn = pymysql.connect(RDS_HOST, user=DB_USER, passwd=DB_PASSWORD, db=DB_NAME, connect_timeout=5)
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO email_subscribers (email) VALUES (%s)", (email,))
+            conn.commit()
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Successfully subscribed')
+        }
+    except Exception as e:
+        print(e)
+        return {
+            'statusCode': 500,
+            'body': json.dumps('Error connecting to the database')
+        }
